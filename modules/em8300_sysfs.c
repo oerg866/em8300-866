@@ -36,18 +36,52 @@
 
 extern struct pci_driver em8300_driver;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
+#define DEV_ATTR_IN_SIG struct device_attribute *attr,
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,15,0)
+#define EM8300_DEV_ATTR_RO_FUNC_WRAPPER(name, r) \
+	static inline ssize_t name##_show(struct device *dev, struct device_attribute *attr, char *buf) \
+		{ return r(dev, attr, buf); }
+
+#define EM8300_DEV_ATTR_RW_FUNC_WRAPPER(name, r, w) \
+	EM8300_DEV_ATTR_RO_FUNC_WRAPPER(name, r) \
+	static inline ssize_t name##_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count) \
+		{ return w(dev, attr, buf, count); }
+
+#define EM8300_DEV_ATTR_RO(name, r) \
+	EM8300_DEV_ATTR_RO_FUNC_WRAPPER(name, r);\
+	static DEVICE_ATTR_RO(name)
+
+#define EM8300_DEV_ATTR_RW(name, r, w) \
+	EM8300_DEV_ATTR_RW_FUNC_WRAPPER(name, r, w);\
+	static DEVICE_ATTR_RW(name)
+
+#define EM8300_DRIVER_ATTR_RO(name, r) \
+	static inline ssize_t name##_show(struct device_driver *dd, char *buf) \
+		{ return r(dd, buf); } \
+	static DRIVER_ATTR_RO(name)
+
+#else
+
+#define EM8300_DEV_ATTR_RO(name, r)	static DEVICE_ATTR(name, S_IRUGO, r, NULL)
+#define EM8300_DEV_ATTR_RW(name, r, w)	static DEVICE_ATTR(name, S_IRUGO|S_IWUSR, r, w)
+
+#define EM8300_DRIVER_ATTR_RO(name, r)	static DRIVER_ATTR(name, S_IRUGO, r, NULL)
+
+#endif
+
 static ssize_t show_version(struct device_driver *dd, char *buf)
 {
 	return sprintf(buf, "%s\n", EM8300_VERSION);
 }
 
-static DRIVER_ATTR(version, S_IRUGO, show_version, NULL);
+EM8300_DRIVER_ATTR_RO(version, show_version);
 
 static ssize_t show_model(struct device *dev,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
-			  struct device_attribute *attr,
-#endif
-			  char  *buf)
+						  DEV_ATTR_IN_SIG
+			  			  char  *buf)
 {
 	struct em8300_s *em = dev_get_drvdata(dev);
 	ssize_t len = 0;
@@ -258,12 +292,10 @@ static ssize_t show_model(struct device *dev,
 	return len;
 }
 
-static DEVICE_ATTR(model, S_IRUGO, show_model, NULL);
+EM8300_DEV_ATTR_RO(model, show_model);
 
 static ssize_t show_zoom(struct device *dev,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
-			 struct device_attribute *attr,
-#endif
+			 DEV_ATTR_IN_SIG
 			 char  *buf)
 {
 	struct em8300_s *em = dev_get_drvdata(dev);
@@ -271,9 +303,7 @@ static ssize_t show_zoom(struct device *dev,
 }
 
 static ssize_t store_zoom(struct device *dev,
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,13)
-			  struct device_attribute *attr,
-#endif
+			  DEV_ATTR_IN_SIG
 			  const char  *buf,
 			  size_t count)
 {
@@ -288,7 +318,7 @@ static ssize_t store_zoom(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(zoom, S_IRUGO|S_IWUSR, show_zoom, store_zoom);
+EM8300_DEV_ATTR_RW(zoom, show_zoom, store_zoom);
 
 static void em8300_sysfs_postregister_driver(void)
 {
