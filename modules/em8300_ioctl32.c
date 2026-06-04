@@ -159,7 +159,6 @@ void em8300_ioctl32_init(void) {
 	register_ioctl32_conversion(EM8300_IOCTL32_INIT, do_em8300_ioctl);
 	register_ioctl32_conversion(EM8300_IOCTL_READREG, NULL);
 	register_ioctl32_conversion(EM8300_IOCTL_WRITEREG, NULL);
-	register_ioctl32_conversion(EM8300_IOCTL_GETSTATUS, NULL);
 	register_ioctl32_conversion(EM8300_IOCTL_SETBCS, NULL);
 	register_ioctl32_conversion(EM8300_IOCTL_GETBCS, NULL);
 	register_ioctl32_conversion(EM8300_IOCTL_SET_ASPECTRATIO, NULL);
@@ -193,7 +192,6 @@ void em8300_ioctl32_exit(void) {
 	unregister_ioctl32_conversion(EM8300_IOCTL32_INIT);
 	unregister_ioctl32_conversion(EM8300_IOCTL_READREG);
 	unregister_ioctl32_conversion(EM8300_IOCTL_WRITEREG);
-	unregister_ioctl32_conversion(EM8300_IOCTL_GETSTATUS);
 	unregister_ioctl32_conversion(EM8300_IOCTL_SETBCS);
 	unregister_ioctl32_conversion(EM8300_IOCTL_GETBCS);
 	unregister_ioctl32_conversion(EM8300_IOCTL_SET_ASPECTRATIO);
