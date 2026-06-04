@@ -275,6 +275,10 @@ struct em8300_s
 #endif
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
+#define IRQF_DISABLED (0)
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
 /* 5.9 removed these macros :( */
 #define HAVE_COMPAT_IOCTL 1
