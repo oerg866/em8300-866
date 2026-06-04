@@ -20,6 +20,14 @@
 #ifndef EM8300_IOCTL32_H
 #define EM8300_IOCTL32_H
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+/* 5.9 removed these macros :( */
+#define HAVE_COMPAT_IOCTL 1
+#define HAVE_UNLOCKED_IOCTL 1
+#else
+#include <linux/fs.h>
+#endif
+
 #ifdef HAVE_COMPAT_IOCTL
 
 extern long em8300_compat_ioctl(struct file* filp, unsigned cmd, unsigned long arg);
