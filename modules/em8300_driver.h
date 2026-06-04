@@ -43,6 +43,7 @@ extern int major;
 #include <linux/time.h> /* struct timeval */
 #include <linux/wait.h> /* wait_queue_head_t */
 #include <linux/list.h> /* struct list_head */
+#include <linux/fs.h>
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34) 
 #include <linux/semaphore.h> /* struct semaphore */ 
@@ -272,6 +273,12 @@ struct em8300_s
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
 #undef snd_card_t
 #endif
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,9,0)
+/* 5.9 removed these macros :( */
+#define HAVE_COMPAT_IOCTL 1
+#define HAVE_UNLOCKED_IOCTL 1
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20)
