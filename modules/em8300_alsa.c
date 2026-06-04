@@ -397,6 +397,10 @@ static void snd_em8300_pcm_analog_free(snd_pcm_t *pcm)
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0)
+#define snd_dma_pci_data(pci) (&(pci)->dev)
+#endif
+
 static int snd_em8300_pcm_analog(em8300_alsa_t *em8300_alsa)
 {
 	struct em8300_s *em = em8300_alsa->em;
@@ -511,8 +515,15 @@ static void em8300_alsa_enable_card(struct em8300_s *em)
 
 	em->alsa_card = NULL;
 
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)
+	if ((err = snd_card_new(&em->dev->dev, alsa_index[em->card_nr], alsa_id[em->card_nr], THIS_MODULE, 0, &card)) < 0)
+		return;
+	
+#else
 	if ((err = snd_card_create(alsa_index[em->card_nr], alsa_id[em->card_nr], THIS_MODULE, 0, &card)) < 0)
 		return;
+#endif
 
 	if ((err = snd_em8300_create(card, em, &em8300_alsa)) < 0) {
 		snd_card_free(card);
