@@ -25,6 +25,10 @@
 #include <linux/kernel.h>
 #include "em8300_compat24.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,5,0)
+#define pr_warning pr_warn
+#endif
+
 int use_bt865[EM8300_MAX] = { [0 ... EM8300_MAX-1] = -1 };
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,10)
 MODULE_PARM(use_bt865, "1-" __MODULE_STRING(EM8300_MAX) "i");
