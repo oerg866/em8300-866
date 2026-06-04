@@ -70,8 +70,32 @@ static int get_em8300_microcode32(em8300_microcode_t *kp, em8300_microcode32_t *
 	return 0;
 }
 
+/* This is hacky and insecure so 5.10+ removed set_fs */
+#if LINUX_VERSION_CODE >= (KERNEL_VERSION(5,10,0))
+#define NO_SET_FS
+#include <linux/compat.h>
+typedef struct em8300_s em8300_s; 
+extern int em8300_ioctl_init(struct em8300_s *em, em8300_microcode_t *useruc);
+#endif
+
 static int em8300_do_ioctl32_init(unsigned long arg, struct file* filp)
 {
+#if defined(NO_SET_FS)
+    em8300_microcode_t karg;
+    em8300_microcode32_t *up = compat_ptr(arg);
+	struct em8300_s *em = filp->private_data;
+    int err;
+
+    err = get_em8300_microcode32(&karg, up);
+    if (err)
+        return err;
+
+    err = em8300_ioctl_init(em, &karg);
+
+    kfree(karg.ucode);
+
+    return err;
+#else
 	mm_segment_t old_fs = get_fs();
 	em8300_microcode_t karg;
 	em8300_microcode32_t *up = (em8300_microcode32_t *)arg;
@@ -94,6 +118,7 @@ static int em8300_do_ioctl32_init(unsigned long arg, struct file* filp)
 	}
 
 	return err;
+#endif
 }
 
 #ifdef HAVE_COMPAT_IOCTL
