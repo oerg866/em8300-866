@@ -121,7 +121,11 @@ static irqreturn_t em8300_irq(int irq, void *dev_id
 {
 	struct em8300_s *em = (struct em8300_s *) dev_id;
 	int irqstatus;
+#if defined(USE_TIMESPEC64)
+	struct timespec64 tv;
+#else
 	struct timeval tv;
+#endif
 
 	irqstatus = read_ucregister(Q_IrqStatus);
 
@@ -147,7 +151,7 @@ static irqreturn_t em8300_irq(int irq, void *dev_id
 			em8300_video_check_ptsfifo(em);
 			em8300_spu_check_ptsfifo(em);
 
-			do_gettimeofday(&tv);
+			EM8300_GETTIMEOFDAY(&tv);
 			em->irqtimediff = TIMEDIFF(tv, em->tv);
 			em->tv = tv;
 			em->irqcount++;

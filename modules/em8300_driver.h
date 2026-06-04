@@ -59,6 +59,10 @@ extern int major;
 #endif
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0) 
+#define USE_TIMESPEC64
+#endif 
+
 struct dicom_s {
 	int luma;
 	int chroma;
@@ -187,7 +191,13 @@ struct em8300_s
 	int clockgen_tvmode;
 	
 	/* Timing measurement */
+
+
+#if defined(USE_TIMESPEC64)
+	struct timespec64 tv, last_status_time;
+#else
 	struct timeval tv, last_status_time;
+#endif
 	long irqtimediff;
 	int irqcount;
 	int frames;
@@ -302,9 +312,17 @@ struct em8300_s
 #else
 #define ACCESS_OK(direction, ptr, len) (!access_ok(direction, (void *) ptr, len))
 #endif
-#define TIMEDIFF(a,b) a.tv_usec - b.tv_usec + \
-	    1000000 * (a.tv_sec - b.tv_sec)
 
+#if defined(USE_TIMESPEC64)
+#define TIMEDIFF(a,b) \
+	((s64)((a).tv_sec - (b).tv_sec) * 1000000000LL + \
+	(s64)((a).tv_nsec - (b).tv_nsec))
+#define EM8300_GETTIMEOFDAY ktime_get_real_ts64
+#else
+#define TIMEDIFF(a,b) a.tv_usec - b.tv_usec + \
+		1000000 * (a.tv_sec - b.tv_sec)
+#define EM8300_GETTIMEOFDAY do_gettimeofday
+#endif
 
 /*
   Prototypes

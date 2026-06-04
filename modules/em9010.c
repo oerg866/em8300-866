@@ -82,9 +82,26 @@ int em9010_cabledetect(struct em8300_s *em)
   a = [ebp-8]
 */
 
+#if defined(USE_TIMESPEC64)
+typedef struct timespec64 __timeval;
+#define TV_USEC(tv) ((tv).tv_nsec / 1000)
+#else
+typedef struct timeval __timeval;
+#define TV_USEC(tv) ((tv).tv_usec)
+#endif
+
 /* computes `a - b'  and write the result in `result', assumes `a >= b' */
-static inline void my_timeval_less(struct timeval a, struct timeval b, struct timeval * result)
+static inline void my_timeval_less(__timeval a, __timeval b, __timeval * result)
 {
+#if defined(USE_TIMESPEC64)
+		if (a.tv_nsec < b.tv_nsec) {
+			a.tv_sec--;
+			a.tv_nsec += NSEC_PER_SEC;
+		}
+
+		result->tv_sec  = a.tv_sec  - b.tv_sec;
+		result->tv_nsec = a.tv_nsec - b.tv_nsec;
+#else
 		if (a.tv_usec < b.tv_usec) {
 			a.tv_sec--;
 			a.tv_usec += 1000000;
@@ -92,34 +109,38 @@ static inline void my_timeval_less(struct timeval a, struct timeval b, struct ti
 
 		result->tv_sec = a.tv_sec - b.tv_sec;
 		result->tv_usec = a.tv_usec - b.tv_usec;
+#endif
 }
 
 static
 int sub_2AC2D(struct em8300_s *em)
 {
 	int a;
-	struct timeval t, t2, tr;
+	__timeval t, t2, tr;
 
-	do_gettimeofday(&t);
+	EM8300_GETTIMEOFDAY(&t);
 	a = 1000;
 	while (em9010_read(em, 0x0) & 0x20) {
 		if (!a--) {
-			do_gettimeofday(&t2);
+			EM8300_GETTIMEOFDAY(&t2);
 			my_timeval_less(t2, t, &tr);
-			if (tr.tv_usec >= 50 * 1000)
-			return(0);
+
+			if (TV_USEC(tr) >= 50 * 1000)
+				return(0);
+
 			a = 1000;
 		}
 	}
 
-	do_gettimeofday(&t);
+	EM8300_GETTIMEOFDAY(&t);
 	a = 1000;
 	while (!(em9010_read(em, 0x0) & 0x20)) {
 		if (!a--) {
-			do_gettimeofday(&t2);
+			EM8300_GETTIMEOFDAY(&t2);
 			my_timeval_less(t2, t, &tr);
-			if(tr.tv_usec >= 50*1000)
-			return(0);
+
+			if(TV_USEC(tr) >= 50*1000)
+				return(0);
 			a = 1000;
 		}
 	}
@@ -534,7 +555,7 @@ int loc_2bcfe(struct em8300_s *em)
   l4 [ebp-10]
   l1 [ebp-14]
   l2 [ebp-1c]
-  l3 [ebp-24]
+  l3ï¿½[ebp-24]
  */
 int loc_2A66E(struct em8300_s *em)
 {

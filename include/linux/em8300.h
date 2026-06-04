@@ -107,7 +107,17 @@ typedef struct {
 #define EM8300_IOCTL_SCR_GETSPEED _IOR('C',17,unsigned)
 #define EM8300_IOCTL_SCR_SETSPEED _IOW('C',17,unsigned)
 #define EM8300_IOCTL_FLUSH _IOW('C',18,int)
+
+/* Hacky, move this to makefile maybe */
+#if defined(TIME64_MAX)
+#define USE_TIMESPEC64
+#endif
+
+#if defined(USE_TIMESPEC64)
+#define EM8300_IOCTL_VBI _IOW('C',19,struct timespec64)
+#else 
 #define EM8300_IOCTL_VBI _IOW('C',19,struct timeval)
+#endif
 
 #define EM8300_OVERLAY_SIGNAL_ONLY 1
 #define EM8300_OVERLAY_SIGNAL_WITH_VGA 2

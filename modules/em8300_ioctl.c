@@ -146,7 +146,7 @@ int em8300_control_ioctl(struct em8300_s *em, int cmd, unsigned long arg)
 			return ret;
 
 		/* copy timestamp and return */
-		if (copy_to_user((void *) arg, &em->tv, sizeof(struct timeval)))
+		if (copy_to_user((void *) arg, &em->tv, sizeof(em->tv)))
 			return -EFAULT;
 		return 0;
 
