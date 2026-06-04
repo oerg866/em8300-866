@@ -23,6 +23,11 @@
 #include <linux/i2c.h>
 #include <linux/crypto.h>
 #include <linux/slab.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+#include <crypto/hash.h>
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,10)
 #include <linux/scatterlist.h>
 #else
@@ -90,7 +95,41 @@ int em8300_eeprom_checksum_init(struct em8300_s *em)
 		goto cleanup1;
 	}
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,19)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
+	{
+		struct crypto_ahash *tfm;
+		struct ahash_request *req;
+		struct scatterlist sg;
+		int err;
+
+		tfm = crypto_alloc_ahash("md5", 0, 0);
+		if (IS_ERR(tfm)) {
+			err = PTR_ERR(tfm);
+			goto cleanup2;
+		}
+
+		req = ahash_request_alloc(tfm, GFP_KERNEL);
+		if (!req) {
+			crypto_free_ahash(tfm);
+			err = -ENOMEM;
+			goto cleanup2;
+		}
+
+		sg_init_one(&sg, buf, 128);
+
+		ahash_request_set_callback(req, 0, NULL, NULL);
+		ahash_request_set_crypt(req, &sg, em->eeprom_checksum, 128);
+
+		err = crypto_ahash_digest(req);
+
+		ahash_request_free(req);
+		crypto_free_ahash(tfm);
+
+		if (err)
+			goto cleanup2;
+	}
+
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,19)
 	{
 		struct crypto_hash *tfm;
 		struct hash_desc desc;
