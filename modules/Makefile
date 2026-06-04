@@ -19,6 +19,10 @@
 ifeq ($(KERNELRELEASE),)
 
 KERNEL_LOCATION := /lib/modules/$(shell uname -r)/build
+VERSION_HEADER_FILE := \
+    $(firstword \
+        $(wildcard $(KERNEL_LOCATION)/include/linux/version.h) \
+        $(wildcard $(KERNEL_LOCATION)/include/generated/uapi/linux/version.h))
 
 # If you are using external i2c modules, you should set
 # EM8300_I2C_LOCATION to the source directory of the modules.
@@ -31,19 +35,25 @@ KERNEL_LOCATION := /lib/modules/$(shell uname -r)/build
 export EM8300_DIR := $(CURDIR)/..
 export INSTALL_MOD_DIR=em8300
 
+ifeq ($(strip $(shell printf '\043if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,27)\n1\n\043else\n0\n\043endif\n' | $(CPP) -imacros $(VERSION_HEADER_FILE) -P -)),1)
+KBUILD_EXTMOD_ARG := M=$(CURDIR)
+else
+KBUILD_EXTMOD_ARG := SUBDIRS=$(CURDIR)
+endif
+
 build: em8300_version.h
-	$(MAKE) -C $(KERNEL_LOCATION) SUBDIRS=$(CURDIR) modules
+	$(MAKE) -C $(KERNEL_LOCATION) $(KBUILD_EXTMOD_ARG) modules
 
 .PHONY: em8300_version.h
 em8300_version.h:
 	[ ! -x ./update_em8300_version.sh ] || ./update_em8300_version.sh $@
 
-ifeq ($(strip $(shell printf '\043if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,51)\n1\n\043else\n0\n\043endif\n' | $(CPP) -imacros $(KERNEL_LOCATION)/include/linux/version.h -P - )),1)
+ifeq ($(strip $(shell printf '\043if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,51)\n1\n\043else\n0\n\043endif\n' | $(CPP) -imacros $(VERSION_HEADER_FILE) -P - )),1)
 
 clean:
 	-rm -f *.o .*.o.flags
 
-KERNVER := $(shell $(CPP) -dM $(KERNEL_LOCATION)/include/linux/version.h | sed -ne 's/^\#define[[:space:]]\+UTS_RELEASE[[:space:]]\+"\(.*\)"$$/\1/p')
+KERNVER := $(shell $(CPP) -dM $(VERSION_HEADER_FILE) | sed -ne 's/^\#define[[:space:]]\+UTS_RELEASE[[:space:]]\+"\(.*\)"$$/\1/p')
 
 MODULES := adv717x.o bt865.o em8300.o
 
@@ -57,10 +67,10 @@ uninstall:
 else
 
 clean:
-	$(MAKE) -C $(KERNEL_LOCATION) SUBDIRS=$(CURDIR) clean
+	$(MAKE) -C $(KERNEL_LOCATION) $(KBUILD_EXTMOD_ARG) clean
 
 install:
-	$(MAKE) -C $(KERNEL_LOCATION) SUBDIRS=$(CURDIR) INSTALL_MOD_PATH=$(DESTDIR) modules_install
+	$(MAKE) -C $(KERNEL_LOCATION) $(KBUILD_EXTMOD_ARG) INSTALL_MOD_PATH=$(DESTDIR) modules_install
 
 uninstall:
 	rm -rf $(DESTDIR)/lib/modules/$(shell cat $(KERNEL_LOCATION)/.kernelrelease 2> /dev/null || cat $(KERNEL_LOCATION)/include/config/kernel.release 2> /dev/null)/$(INSTALL_MOD_DIR)
