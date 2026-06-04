@@ -332,6 +332,7 @@ struct em8300_s
 int em8300_i2c_init1(struct em8300_s *em);
 int em8300_i2c_init2(struct em8300_s *em);
 void em8300_i2c_exit(struct em8300_s *em);
+int em8300_encoder_command(struct em8300_s *em, unsigned int cmd, void *arg);
 void em8300_clockgen_write(struct em8300_s *em, int abyte);
 
 void em9010_write(struct em8300_s *em, int reg, int data);

@@ -215,6 +215,8 @@ struct mode_config_s {
 };
 
 struct adv717x_data_s {
+	/* MODERN KERNEL HACK HACK HACK AARRHGHHHH */
+	int (*command)(struct i2c_client *client, unsigned int cmd, void *arg);
 	int chiptype;
 	int chiprev;
 	int mode;
@@ -780,6 +782,8 @@ static int adv717x_probe(struct i2c_client *client,
 		return -ENOMEM;
 	}
 	memset(data, 0, sizeof(struct adv717x_data_s));
+
+	data->command = adv717x_command;
 
 	i2c_set_clientdata(client, data);
 

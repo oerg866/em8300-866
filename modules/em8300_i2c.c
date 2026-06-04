@@ -72,6 +72,36 @@ struct private_data_s {
 	struct em8300_s *em;
 };
 
+struct em8300_encoder_client_data_s {
+	/* MODERN KERNEL HACK HACK HACK AARRHGHHHH */
+	int (*command)(struct i2c_client *client, unsigned int cmd, void *arg);
+};
+
+static int client_command(struct i2c_client *client, unsigned int cmd, void *arg)
+{
+#if defined(USE_I2C_CLIENT_DATA)
+	struct em8300_encoder_client_data_s *enc = i2c_get_clientdata(client);
+
+	if (!client)
+		return EINVAL;
+
+	if (!enc || !enc->command)
+		return ENODEV;
+
+	return enc->command(client, cmd, arg);
+#else
+	if (!client)
+		return EINVAL;
+
+	if (!client->driver || !client->driver->command)
+		return ENODEV;
+	
+	return client->driver->command(em->encoder,
+						ENCODER_CMD_ENABLEOUTPUT,
+						(void *) 0);
+#endif
+}
+
 /* ----------------------------------------------------------------------- */
 /* I2C bitbanger functions						   */
 /* ----------------------------------------------------------------------- */
@@ -129,7 +159,10 @@ static int em8300_i2c_lock_client(struct i2c_client *client)
 	struct em8300_s *em = i2c_get_adapdata(client->adapter);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,54)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
+
+#if defined(USE_I2C_CLIENT_DATA)
+	if (!try_module_get(client->dev.driver->owner))
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
 	if (!try_module_get(client->driver->driver.owner))
 #else
 	if (!try_module_get(client->driver->owner))
@@ -145,7 +178,10 @@ static int em8300_i2c_lock_client(struct i2c_client *client)
 static void em8300_i2c_unlock_client(struct i2c_client *client)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,54)
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
+
+#if defined(USE_I2C_CLIENT_DATA)
+	module_put(client->dev.driver->owner);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
 	module_put(client->driver->driver.owner);
 #else
 	module_put(client->driver->owner);
@@ -159,16 +195,17 @@ static void em8300_adv717x_setup(struct em8300_s *em,
 	struct getconfig_s data;
 	struct setparam_s param;
 
-	if (!((client->driver) && (client->driver->command))) {
-		printk("em8300-%d: cannot configure adv717x encoder: "
-		       "no client->driver->command\n", em->card_nr);
+
+	int result = client_command(client, ENCODER_CMD_ENABLEOUTPUT, (void *)0);
+
+	if (result == EINVAL || result == ENODEV) {
+		printk("em8300-%d: cannot configure adv717x encoder: %d\n",
+		       em->card_nr, result);
 		return;
 	}
 
-	client->driver->command(client, ENCODER_CMD_ENABLEOUTPUT, (void *)0);
-
 	data.card_nr = em->card_nr;
-	if (client->driver->command(client, ENCODER_CMD_GETCONFIG,
+	if (client_command(client, ENCODER_CMD_GETCONFIG,
 				    (void *) &data) != 0) {
 		printk("em8300-%d: ENCODER_CMD_GETCONFIG failed\n",
 		       em->card_nr);
@@ -191,31 +228,31 @@ static void em8300_adv717x_setup(struct em8300_s *em,
 	param.param = ENCODER_PARAM_COLORBARS;
 	param.modes = (uint32_t)-1;
 	param.val = data.config[4] ? 1 : 0;
-	client->driver->command(client, ENCODER_CMD_SETPARAM,
+	client_command(client, ENCODER_CMD_SETPARAM,
 				&param);
 	param.param = ENCODER_PARAM_OUTPUTMODE;
 	param.val = data.config[5];
-	client->driver->command(client, ENCODER_CMD_SETPARAM,
+	client_command(client, ENCODER_CMD_SETPARAM,
 				&param);
 	param.param = ENCODER_PARAM_PPORT;
 	param.modes = NTSC_MODES_MASK;
 	param.val = em->config.adv717x_model.pixelport_16bit ? 1 : 0;
-	client->driver->command(client, ENCODER_CMD_SETPARAM,
+	client_command(client, ENCODER_CMD_SETPARAM,
 				&param);
 	param.modes = PAL_MODES_MASK;
 	param.val = em->config.adv717x_model.pixelport_other_pal
 		? (em->config.adv717x_model.pixelport_16bit ? 0 : 1)
 		: (em->config.adv717x_model.pixelport_16bit ? 1 : 0);
-	client->driver->command(client, ENCODER_CMD_SETPARAM,
+	client_command(client, ENCODER_CMD_SETPARAM,
 				&param);
 	param.param = ENCODER_PARAM_PDADJ;
 	param.modes = NTSC_MODES_MASK;
 	param.val = em->config.adv717x_model.pixeldata_adjust_ntsc;
-	client->driver->command(client, ENCODER_CMD_SETPARAM,
+	client_command(client, ENCODER_CMD_SETPARAM,
 				&param);
 	param.modes = PAL_MODES_MASK;
 	param.val = em->config.adv717x_model.pixeldata_adjust_pal;
-	client->driver->command(client, ENCODER_CMD_SETPARAM,
+	client_command(client, ENCODER_CMD_SETPARAM,
 				&param);
 }
 
@@ -531,6 +568,15 @@ void em8300_i2c_exit(struct em8300_s *em)
 #endif
 	}
 }
+
+int em8300_encoder_command(struct em8300_s *em, unsigned int cmd, void *arg)
+{
+	if (!em)
+		return EINVAL;
+
+	return client_command(em->encoder, cmd, arg);
+}
+
 
 void em8300_clockgen_write(struct em8300_s *em, int abyte)
 {

@@ -550,9 +550,7 @@ int em8300_ioctl_setvideomode(struct em8300_s *em, int mode)
 
 	em8300_dicom_disable(em);
 
-	if ((em->encoder) && (em->encoder->driver)
-	    && (em->encoder->driver->command))
-		em->encoder->driver->command(em->encoder, ENCODER_CMD_SETMODE, (void *)encoder);
+	em8300_encoder_command(em, ENCODER_CMD_SETMODE, (void *)encoder);
 	em8300_dicom_enable(em);
 	em8300_dicom_update(em);
 
@@ -563,9 +561,7 @@ void em8300_ioctl_enable_videoout(struct em8300_s *em, int mode)
 {
 	em8300_dicom_disable(em);
 
-	if ((em->encoder) && (em->encoder->driver)
-	    && (em->encoder->driver->command))
-		em->encoder->driver->command(em->encoder,
+	em8300_encoder_command(em,
 					     ENCODER_CMD_ENABLEOUTPUT,
 					     (void *)(long int)(stop_video[em->card_nr]?mode:1));
 
@@ -630,9 +626,7 @@ int em8300_ioctl_overlay_setmode(struct em8300_s *em, int val)
 	case EM8300_OVERLAY_MODE_RECTANGLE:
 	case EM8300_OVERLAY_MODE_OVERLAY:
 		if (!em->overlay_enabled) {
-			if ((em->encoder) && (em->encoder->driver)
-			    && (em->encoder->driver->command))
-				em->encoder->driver->command(em->encoder,
+			em8300_encoder_command(em,
 							     ENCODER_CMD_ENABLEOUTPUT,
 							     (void *)(long int)0);
 			em->clockgen = (em->clockgen & ~CLOCKGEN_MODEMASK) | em->clockgen_overlaymode;
