@@ -275,6 +275,12 @@ struct em8300_s
 #endif
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,8,0)
+#define __devinit
+#define __devexit
+#define __devexit_p(x) x
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0)
 #define IRQF_DISABLED (0)
 #endif
