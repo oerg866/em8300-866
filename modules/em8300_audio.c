@@ -154,7 +154,9 @@ static void preprocess_digital(struct em8300_s *em, unsigned char *outbuf,
 		}
 	} else {
 		if (em->audio.channels == 2) {
-			(void)copy_from_user(em->mafifo->preprocess_buffer, inbuf_user, inlength);
+			if (0 != copy_from_user(em->mafifo->preprocess_buffer, inbuf_user, inlength)) {
+				pr_err("Failed to copy FIFO data\n");
+			}
 		} else {
 			for (i = 0; i < inlength; i += 2) {
 				get_user(em->mafifo->preprocess_buffer[2 * i + 0], inbuf_user++);

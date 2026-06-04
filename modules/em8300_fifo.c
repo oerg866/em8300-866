@@ -203,7 +203,10 @@ int em8300_fifo_write_nolock(struct fifo_s *fifo, int n, const char *userbuffer,
 		if (fifo->preprocess_cb) {
 			fifo->preprocess_cb(fifo->em, fifo->fifobuffer + writeindex * fifo->slotsize, userbuffer, copysize);
 		} else {
-			(void)copy_from_user(fifo->fifobuffer + writeindex * fifo->slotsize, userbuffer, copysize);
+			if (0 != copy_from_user(fifo->fifobuffer + writeindex * fifo->slotsize, userbuffer, copysize)) {
+				pr_err("Failed to copy FIFO data\n");
+				return -EFAULT;
+			}
 		}
 
 		writeindex++;
