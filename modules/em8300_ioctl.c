@@ -410,7 +410,7 @@ int em8300_control_ioctl(struct em8300_s *em, int cmd, unsigned long arg)
 		}
 		if (_IOC_DIR(cmd) & _IOC_READ) {
 			val = read_ucregister(MV_SCRSpeed);
-			if (! read_ucregister(MicroCodeVersion) >= 0x29)
+			if (read_ucregister(MicroCodeVersion) < 0x29)
 				val <<= 8;
 
 			if (copy_to_user((void *) arg, &val, sizeof(unsigned)))
