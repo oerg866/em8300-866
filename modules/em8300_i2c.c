@@ -57,6 +57,13 @@
 #include <linux/sysfs.h>
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
+#define USE_I2C_CLIENT_DATA
+#define I2C_CLIENT_GET_DRIVER(client) (client->dev.driver)
+#else
+#define I2C_CLIENT_GET_DRIVER(client) (client->driver)
+#endif
+
 #define I2C_HW_B_EM8300 0xa
 
 struct private_data_s {
@@ -310,6 +317,31 @@ static const struct i2c_adapter em8300_i2c_adap_template = {
 #endif
 };
 
+static struct i2c_client *
+em8300_i2c_new_probed_device(struct i2c_adapter *adap,
+		       struct i2c_board_info *info,
+		       unsigned short const *addr_list)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+		return i2c_new_scanned_device(adap, info, addr_list, NULL);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
+		return i2c_new_probed_device(adap, info, addr_list, NULL);
+#else
+		return i2c_new_probed_device(adap, info, addr_list);
+#endif
+
+}
+
+static struct i2c_client *
+em8300_i2c_new_device(struct i2c_adapter *adap, struct i2c_board_info const *info)
+{
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+	return i2c_new_client_device(adap, info);
+#else
+	return i2c_new_device(adap, info);
+#endif
+}
+
 int em8300_i2c_init1(struct em8300_s *em)
 {
 	int ret, i;
@@ -386,11 +418,7 @@ int em8300_i2c_init1(struct em8300_s *em)
 		struct i2c_board_info i2c_info;
 		const unsigned short eeprom_addr[] = { 0x50, I2C_CLIENT_END };
 		i2c_info = (struct i2c_board_info){ I2C_BOARD_INFO("eeprom", 0) };
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
-		em->eeprom = i2c_new_probed_device(&em->i2c_adap[1], &i2c_info, eeprom_addr, NULL);
-#else
-		em->eeprom = i2c_new_probed_device(&em->i2c_adap[1], &i2c_info, eeprom_addr);
-#endif
+		em->eeprom = em8300_i2c_new_probed_device(&em->i2c_adap[1], &i2c_info, eeprom_addr);
 		if (em->eeprom) {
 			if (sysfs_create_link(&em->dev->dev.kobj, &em->eeprom->dev.kobj, "eeprom"))
 				printk(KERN_WARNING "em8300-%d: i2c: unable to create the eeprom link\n", em->card_nr);
@@ -425,7 +453,7 @@ int em8300_i2c_init2(struct em8300_s *em)
 			sizeof(i2c_info.type));
 #endif
 		i2c_info.addr = known_models[em->model].module.addr;
-		em->encoder = i2c_new_device(&em->i2c_adap[0], &i2c_info);
+		em->encoder = em8300_i2c_new_device(&em->i2c_adap[0], &i2c_info);
 		if (em->encoder)
 			goto found;
 	} else {
@@ -433,19 +461,11 @@ int em8300_i2c_init2(struct em8300_s *em)
 		const unsigned short adv717x_addr[] = { 0x6a, I2C_CLIENT_END };
 		const unsigned short bt865_addr[] = { 0x45, I2C_CLIENT_END };
 		i2c_info = (struct i2c_board_info){ I2C_BOARD_INFO("adv717x", 0) };
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
-		em->encoder = i2c_new_probed_device(&em->i2c_adap[0], &i2c_info, adv717x_addr, NULL);
-#else
-		em->encoder = i2c_new_probed_device(&em->i2c_adap[0], &i2c_info, adv717x_addr);
-#endif
+		em->encoder = em8300_i2c_new_probed_device(&em->i2c_adap[0], &i2c_info, adv717x_addr);
 		if (em->encoder)
 			goto found;
 		i2c_info = (struct i2c_board_info){ I2C_BOARD_INFO("bt865", 0) };
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,36)
-		em->encoder = i2c_new_probed_device(&em->i2c_adap[0], &i2c_info, bt865_addr, NULL);
-#else
-		em->encoder = i2c_new_probed_device(&em->i2c_adap[0], &i2c_info, bt865_addr);
-#endif
+		em->encoder = em8300_i2c_new_probed_device(&em->i2c_adap[0], &i2c_info, bt865_addr);
 		if (em->encoder)
 			goto found;
 	}
@@ -453,11 +473,11 @@ int em8300_i2c_init2(struct em8300_s *em)
 	return 0;
 
  found:
-	for (i = 0; (i < 50) && !em->encoder->driver; i++) {
+	for (i = 0; (i < 50) && !I2C_CLIENT_GET_DRIVER(em->encoder); i++) {
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		schedule_timeout(HZ/10);
 	}
-	if (!em->encoder->driver) {	
+	if (!I2C_CLIENT_GET_DRIVER(em->encoder)) {	
 		printk(KERN_ERR "em8300-%d: encoder chip found but no driver found within 5 seconds\n", em->card_nr);
 		i2c_unregister_device(em->encoder);
 		em->encoder = NULL;
