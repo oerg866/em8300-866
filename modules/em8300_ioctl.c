@@ -76,12 +76,12 @@ int em8300_control_ioctl(struct em8300_s *em, int cmd, unsigned long arg)
 			return -EFAULT;
 		}
 		if (_IOC_DIR(cmd) & _IOC_WRITE) {
-			if (!access_ok(VERIFY_READ, (void *) arg, len)) {
+			if (!ACCESS_OK(VERIFY_READ, (void *) arg, len)) {
 				return -EFAULT;
 			}
 		}
 		if (_IOC_DIR(cmd) & _IOC_READ) {
-			if (!access_ok(VERIFY_WRITE, (void *) arg, len)) {
+			if (!ACCESS_OK(VERIFY_WRITE, (void *) arg, len)) {
 				return -EFAULT;
 			}
 		}

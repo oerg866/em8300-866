@@ -274,6 +274,12 @@ struct em8300_s
 #endif
 #endif
 
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
+#define ACCESS_OK(direction, ptr, len) (!access_ok((void __user *) ptr, len))
+#else
+#define ACCESS_OK(direction, ptr, len) (!access_ok(direction, (void *) ptr, len))
+#endif
 #define TIMEDIFF(a,b) a.tv_usec - b.tv_usec + \
 	    1000000 * (a.tv_sec - b.tv_sec)
 

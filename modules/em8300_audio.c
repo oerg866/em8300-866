@@ -292,12 +292,12 @@ int em8300_audio_ioctl(struct em8300_s *em, unsigned int cmd, unsigned long arg)
 			return -EFAULT;
 		}
 		if (_SIOC_DIR(cmd) & _SIOC_WRITE) {
-			if (!access_ok(VERIFY_READ, (void *) arg, len)) {
+			if (!ACCESS_OK(VERIFY_READ, (void *) arg, len)) {
 				return -EFAULT;
 			}
 		}
 		if (_SIOC_DIR(cmd) & _SIOC_READ) {
-			if (!access_ok(VERIFY_WRITE, (void *) arg, len)) {
+			if (!ACCESS_OK(VERIFY_WRITE, (void *) arg, len)) {
 				return -EFAULT;
 			}
 		}

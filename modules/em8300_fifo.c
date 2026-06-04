@@ -197,7 +197,7 @@ int em8300_fifo_write_nolock(struct fifo_s *fifo, int n, const char *userbuffer,
 			break;
 		}
 
-		if (!access_ok(VERIFY_READ, userbuffer, copysize))
+		if (!ACCESS_OK(VERIFY_READ, userbuffer, copysize))
 			return -EFAULT;
 
 		if (fifo->preprocess_cb) {
