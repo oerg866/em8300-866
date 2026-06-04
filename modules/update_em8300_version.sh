@@ -22,8 +22,8 @@ target=$1
 
 test -n "$target"
 
-hg_id=$(hg id -i 2>/dev/null)
-printf '#define EM8300_VERSION "hg-%s"\n' "$hg_id" > ${target}.tmp
+git_id=$(git rev-parse --short HEAD 2>/dev/null)
+printf '#define EM8300_VERSION "git-%s"\n' "$git_id" > ${target}.tmp
 if diff -q ${target} ${target}.tmp >/dev/null 2>&1; then
     rm ${target}.tmp
 else
