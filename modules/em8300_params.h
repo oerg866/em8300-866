@@ -49,7 +49,7 @@ typedef enum {
 	AUDIO_DRIVER_MAX
 } audio_driver_t;
 
-extern audio_driver_t audio_driver_nr[];
+extern int audio_driver_nr[];
 
 /* Number of the /dev/dsp device to allocate (only used with the OSS audio
    driver.
