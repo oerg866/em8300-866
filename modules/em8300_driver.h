@@ -274,6 +274,11 @@ struct em8300_s
 #endif
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20)
+#define FILE_DENTRY_INODE(file) ((file)->f_path.dentry->d_inode)
+#else
+#define FILE_DENTRY_INODE(file) ((file)->f_dentry->d_inode)
+#endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,0,0)
 #define ACCESS_OK(direction, ptr, len) (!access_ok((void __user *) ptr, len))

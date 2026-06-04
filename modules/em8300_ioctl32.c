@@ -48,6 +48,12 @@ typedef struct {
 
 #define EM8300_IOCTL32_INIT       _IOW('C',0,em8300_microcode32_t)
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20)
+#define FILE_DENTRY_INODE(file) ((file)->f_path.dentry->d_inode)
+#else
+#define FILE_DENTRY_INODE(file) ((file)->f_dentry->d_inode)
+#endif
+
 static int get_em8300_microcode32(em8300_microcode_t *kp, em8300_microcode32_t *up)
 {
 	u32 tmp;
@@ -76,7 +82,7 @@ static int em8300_do_ioctl32_init(unsigned long arg, struct file* filp)
 	if (!err) {
 		set_fs(KERNEL_DS);
 #ifndef HAVE_UNLOCKED_IOCTL
-		err = filp->f_op->ioctl(filp->f_dentry->d_inode, filp,
+		err = filp->f_op->ioctl(fFILE_DENTRY_INODE(filp), filp,
 					EM8300_IOCTL_INIT, (unsigned long)&karg);
 #else
 		err = filp->f_op->unlocked_ioctl(filp,
@@ -99,7 +105,7 @@ long em8300_compat_ioctl(struct file* filp, unsigned cmd, unsigned long arg)
 		return em8300_do_ioctl32_init(arg, filp);
 	default:
 #ifndef HAVE_UNLOCKED_IOCTL
-		return filp->f_op->ioctl(filp->f_dentry->d_inode, filp, cmd, arg);
+		return filp->f_op->ioctl(FILE_DENTRY_INODE(filp), filp, cmd, arg);
 #else
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 #endif
@@ -117,7 +123,7 @@ static int do_em8300_ioctl(unsigned int fd, unsigned int cmd, unsigned long arg,
 		return em8300_do_ioctl32_init(arg, filp);
 	} else {
 #ifndef HAVE_UNLOCKED_IOCTL
-		return filp->f_op->ioctl(filp->f_dentry->d_inode, filp, cmd, arg);
+		return filp->f_op->ioctl(FILE_DENTRY_INODE(filp), filp, cmd, arg);
 #else
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 #endif

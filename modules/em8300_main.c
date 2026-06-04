@@ -212,7 +212,7 @@ static int em8300_io_ioctl(
 			unsigned long arg)
 {
 #ifdef HAVE_UNLOCKED_IOCTL
-	struct inode *inode = filp->f_dentry->d_inode;
+	struct inode *inode = FILE_DENTRY_INODE(filp);
 #endif
 	struct em8300_s *em = filp->private_data;
 	int subdevice = EM8300_IMINOR(inode) % 4;
@@ -318,7 +318,7 @@ static int em8300_io_open(struct inode *inode, struct file *filp)
 static ssize_t em8300_io_write(struct file *file, const char *buf, size_t count, loff_t *ppos)
 {
 	struct em8300_s *em = file->private_data;
-	int subdevice = EM8300_IMINOR(file->f_dentry->d_inode) % 4;
+	int subdevice = EM8300_IMINOR(FILE_DENTRY_INODE(file)) % 4;
 
 	switch (subdevice) {
 	case EM8300_SUBDEVICE_VIDEO:
@@ -342,7 +342,7 @@ int em8300_io_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	struct em8300_s *em = file->private_data;
 	unsigned long size = vma->vm_end - vma->vm_start;
-	int subdevice = EM8300_IMINOR(file->f_dentry->d_inode) % 4;
+	int subdevice = EM8300_IMINOR(FILE_DENTRY_INODE(file)) % 4;
 
 	if (subdevice != EM8300_SUBDEVICE_CONTROL)
 		return -EPERM;
@@ -415,7 +415,7 @@ int em8300_io_mmap(struct file *file, struct vm_area_struct *vma)
 		remap_pfn_range(vma, vma->vm_start, em->adr >> PAGE_SHIFT, vma->vm_end - vma->vm_start, vma->vm_page_prot);
 #endif
 		vma->vm_file = file;
-		atomic_inc(&file->f_dentry->d_inode->i_count);
+		atomic_inc(&FILE_DENTRY_INODE(file)->i_count);
 		break;
 	default:
 		return -EINVAL;
@@ -427,7 +427,7 @@ int em8300_io_mmap(struct file *file, struct vm_area_struct *vma)
 static unsigned int em8300_poll(struct file *file, struct poll_table_struct *wait)
 {
 	struct em8300_s *em = file->private_data;
-	int subdevice = EM8300_IMINOR(file->f_dentry->d_inode) % 4;
+	int subdevice = EM8300_IMINOR(FILE_DENTRY_INODE(file)) % 4;
 	unsigned int mask = 0;
 
 	switch (subdevice) {
