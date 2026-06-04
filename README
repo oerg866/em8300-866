@@ -4,3 +4,11 @@ For further information, visit the webpage at http://dxr3.sourceforge.net/
 
 Things are currently being autoconfed.  The kernel modules still need to
 be built separately.
+
+--------------------------------------------------------------------------
+
+This is a WIP rework to get the driver running on kernels 5.x and 6.x.
+
+It is so far not tested properly.
+
+-- E. Voirin 2026
