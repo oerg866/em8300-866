@@ -171,8 +171,13 @@ static void release_em8300(struct em8300_s *em)
 					     (void *) 0);
 
 #ifdef CONFIG_MTRR
-	if (em->mtrr_reg)
+	if (em->mtrr_reg) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+		arch_phys_wc_del(em->mtrr_reg);
+#else
 		mtrr_del(em->mtrr_reg, em->adr, em->memsize);
+#endif
+	}
 #endif
 
 	em8300_eeprom_checksum_deinit(em);
@@ -859,7 +864,11 @@ static int __devinit em8300_probe(struct pci_dev *dev,
 
 	pr_info("em8300-%d: mapped-memory at 0x%p\n", em->card_nr, em->mem);
 #ifdef CONFIG_MTRR
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+	em->mtrr_reg = arch_phys_wc_add(em->adr, em->memsize);
+#else
 	em->mtrr_reg = mtrr_add(em->adr, em->memsize, MTRR_TYPE_UNCACHABLE, 1);
+#endif
 	if (em->mtrr_reg)
 		pr_info("em8300-%d: using MTRR\n", em->card_nr);
 #endif
@@ -902,8 +911,13 @@ static int __devinit em8300_probe(struct pci_dev *dev,
 
 irq_error:
 #ifdef CONFIG_MTRR
-	if (em->mtrr_reg)
+	if (em->mtrr_reg) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,17,0)
+		arch_phys_wc_del(em->mtrr_reg);
+#else
 		mtrr_del(em->mtrr_reg, em->adr, em->memsize);
+#endif
+	}
 #endif
 	iounmap(em->mem);
 
