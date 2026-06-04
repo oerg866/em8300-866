@@ -28,6 +28,10 @@
 
 #ifdef CONFIG_PROC_FS
 
+#if LINUX_VERSION_CODE >= (KERNEL_VERSION(3,10,0))
+#define USE_NEW_PROC_API
+#endif
+
 #ifndef EM8300_PROCFS_DIR
 #define EM8300_PROCFS_DIR "em8300"
 #endif
@@ -141,6 +145,33 @@ static int em8300_proc_read(char *page, char **start, off_t off, int count, int 
 	return len;
 }
 
+#if defined(USE_NEW_PROC_API)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,17,0)
+#define PDE_DATA(in)	pde_data(in)
+#endif
+static ssize_t em8300_proc_read_new(struct file *file, char __user *buf,
+                                 size_t count, loff_t *ppos)
+{
+    void *data = PDE_DATA(file_inode(file));
+	ssize_t len = 0;
+    char *page = (char *)__get_free_page(GFP_KERNEL);
+
+	char *dummy_start = NULL;
+	int dummy_eof;
+
+	if (!page)
+        return -ENOMEM;
+
+    len = em8300_proc_read(page, &dummy_start, 0, (int) count, &dummy_eof, data);
+    len = simple_read_from_buffer(buf, count, ppos, page, len);
+	return len;
+}
+
+/* New — using proc_create with file_operations */
+static const struct proc_ops em8300_proc_fops = {
+	.proc_read  = em8300_proc_read_new,
+};
+#endif
 
 static void em8300_procfs_register_card(struct em8300_s *em)
 {
@@ -148,6 +179,15 @@ static void em8300_procfs_register_card(struct em8300_s *em)
 	if (em8300_proc) {
 		struct proc_dir_entry *proc;
 		sprintf(devname, "%d", em->card_nr);
+
+#if defined(USE_NEW_PROC_API)
+		proc = proc_create_data(devname, 
+					 S_IRUGO | S_IWUGO,
+					 NULL,
+					 &em8300_proc_fops,
+					 em);
+
+#else
 		proc = create_proc_entry(devname,
 					 S_IFREG | S_IRUGO,
 					 em8300_proc);
@@ -158,6 +198,7 @@ static void em8300_procfs_register_card(struct em8300_s *em)
 			proc->owner = THIS_MODULE;
 #endif
 		}
+#endif
 	}
 }
 
@@ -179,9 +220,19 @@ static void em8300_procfs_unregister_driver(void)
 
 static void em8300_procfs_register_driver(void)
 {
+
+#if defined(USE_NEW_PROC_API)
+	em8300_proc = proc_create(EM8300_PROCFS_DIR, 
+					 S_IFDIR | S_IRUGO | S_IXUGO,
+					 NULL,
+					 NULL);
+
+#else
 	em8300_proc = create_proc_entry(EM8300_PROCFS_DIR,
 					S_IFDIR | S_IRUGO | S_IXUGO,
 					NULL);
+#endif
+
 	if (!em8300_proc)
 		printk(KERN_ERR "em8300: unable to register proc entry!\n");
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,30)
