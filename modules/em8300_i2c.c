@@ -58,7 +58,7 @@
 #endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0)
-#define USE_I2C_CLIENT_DATA
+#define NEW_I2C_API
 #define I2C_CLIENT_GET_DRIVER(client) (client->dev.driver)
 #else
 #define I2C_CLIENT_GET_DRIVER(client) (client->driver)
@@ -72,23 +72,20 @@ struct private_data_s {
 	struct em8300_s *em;
 };
 
-struct em8300_encoder_client_data_s {
-	/* MODERN KERNEL HACK HACK HACK AARRHGHHHH */
-	int (*command)(struct i2c_client *client, unsigned int cmd, void *arg);
-};
-
 static int client_command(struct i2c_client *client, unsigned int cmd, void *arg)
 {
-#if defined(USE_I2C_CLIENT_DATA)
-	struct em8300_encoder_client_data_s *enc = i2c_get_clientdata(client);
-
+#if defined(NEW_I2C_API)
+	struct i2c_driver *driver;
+	
 	if (!client)
 		return EINVAL;
+	
+	driver = to_i2c_driver(client->dev.driver);
 
-	if (!enc || !enc->command)
+	if (!driver || !driver->command)
 		return ENODEV;
 
-	return enc->command(client, cmd, arg);
+	return driver->command(client, cmd, arg);
 #else
 	if (!client)
 		return EINVAL;
@@ -160,7 +157,7 @@ static int em8300_i2c_lock_client(struct i2c_client *client)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,54)
 
-#if defined(USE_I2C_CLIENT_DATA)
+#if defined(NEW_I2C_API)
 	if (!try_module_get(client->dev.driver->owner))
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
 	if (!try_module_get(client->driver->driver.owner))
@@ -179,7 +176,7 @@ static void em8300_i2c_unlock_client(struct i2c_client *client)
 {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,54)
 
-#if defined(USE_I2C_CLIENT_DATA)
+#if defined(NEW_I2C_API)
 	module_put(client->dev.driver->owner);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,16)
 	module_put(client->driver->driver.owner);
