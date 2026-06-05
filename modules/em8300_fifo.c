@@ -185,7 +185,7 @@ int em8300_fifo_sync(struct fifo_s *fifo)
 		return ret;
 }
 
-int em8300_fifo_write_nolock(struct fifo_s *fifo, int n, const char *userbuffer, int flags)
+static int em8300_fifo_write_nolock(struct fifo_s *fifo, int n, const char *userbuffer, int flags)
 {
 	int freeslots, writeindex, i, bytes_transferred = 0, copysize;
 
@@ -241,7 +241,7 @@ int em8300_fifo_write(struct fifo_s *fifo, int n, const char *userbuffer, int fl
 	return ret;
 }
 
-int em8300_fifo_writeblocking_nolock(struct fifo_s *fifo, int n, const char *userbuffer, int flags)
+static int em8300_fifo_writeblocking_nolock(struct fifo_s *fifo, int n, const char *userbuffer, int flags)
 {
 	int total_bytes_written = 0, copy_size;
 	long ret;

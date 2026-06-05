@@ -914,7 +914,7 @@ static int adv717x_command(struct i2c_client *client, unsigned int cmd, void *ar
 /* ----------------------------------------------------------------------- */
 
 
-int __init adv717x_init(void)
+static int __init adv717x_init(void)
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,10)
 	int i;
@@ -934,7 +934,7 @@ int __init adv717x_init(void)
 	return i2c_add_driver(&adv717x_driver);
 }
 
-void __exit adv717x_cleanup(void)
+static void __exit adv717x_cleanup(void)
 {
 	i2c_del_driver(&adv717x_driver);
 }

@@ -180,7 +180,7 @@ int em8300_video_flush(struct em8300_s *em)
 	return 0;
 }
 
-void set_dicom_kmin(struct em8300_s *em)
+static void set_dicom_kmin(struct em8300_s *em)
 {
 	int kmin;
 

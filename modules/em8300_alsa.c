@@ -561,7 +561,7 @@ static void em8300_alsa_disable_card(struct em8300_s *em)
 		snd_card_free(em->alsa_card);
 }
 
-void em8300_alsa_audio_interrupt(struct em8300_s *em)
+static void em8300_alsa_audio_interrupt(struct em8300_s *em)
 {
 	if (em->audio_driver_style != ALSA)
 		return;

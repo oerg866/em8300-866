@@ -466,7 +466,7 @@ static unsigned int em8300_poll(struct file *file, struct poll_table_struct *wai
 	return mask;
 }
 
-int em8300_io_release(struct inode *inode, struct file *filp)
+static int em8300_io_release(struct inode *inode, struct file *filp)
 {
 	struct em8300_s *em = filp->private_data;
 	int subdevice = EM8300_IMINOR(inode) % 4;
@@ -613,7 +613,7 @@ static unsigned int em8300_dsp_poll(struct file *file, struct poll_table_struct 
 	return mask;
 }
 
-int em8300_dsp_release(struct inode *inode, struct file *filp)
+static int em8300_dsp_release(struct inode *inode, struct file *filp)
 {
 	struct em8300_s *em = filp->private_data;
 

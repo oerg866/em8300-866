@@ -55,7 +55,7 @@ unsigned default_palette[16] = {
 	0x3dafa5, 0x718947, 0xeb8080
 };
 
-int em8300_spu_setpalette(struct em8300_s *em, unsigned *pal)
+static int em8300_spu_setpalette(struct em8300_s *em, unsigned *pal)
 {
 	int i, palette;
 
@@ -69,7 +69,7 @@ int em8300_spu_setpalette(struct em8300_s *em, unsigned *pal)
 	return 0;
 }
 
-int em8300_spu_button(struct em8300_s *em, em8300_button_t *btn)
+static int em8300_spu_button(struct em8300_s *em, em8300_button_t *btn)
 {
 	write_ucregister(SP_Command, 0x2);
 

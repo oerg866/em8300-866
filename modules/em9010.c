@@ -423,7 +423,7 @@ static int color_cal(struct em8300_s *em,int ul, int a, int b, int c,int d, int 
 	return 1;
 }
 
-int em9010_calibrate_xcorrection(struct em8300_s *em)
+static int em9010_calibrate_xcorrection(struct em8300_s *em)
 {
 	int i, j;
 
@@ -498,7 +498,7 @@ int em9010_calibrate_xcorrection(struct em8300_s *em)
   l3 = [ebp-4]
   l1 = [ebp-0x10]
  */
-int loc_2bcfe(struct em8300_s *em)
+static int loc_2bcfe(struct em8300_s *em)
 {
 	int l1 = 10,l2,l3,l4,l5,l6,l7;
 
@@ -557,7 +557,7 @@ int loc_2bcfe(struct em8300_s *em)
   l2 [ebp-1c]
   l3�[ebp-24]
  */
-int loc_2A66E(struct em8300_s *em)
+static int loc_2A66E(struct em8300_s *em)
 {
 	int l1, l2, l3, l4, l5, l6 = 0, l7, l8, l9, l10, l11, l12, l13;
 

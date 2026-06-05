@@ -1061,7 +1061,7 @@ static int bt865_command(struct i2c_client *client, unsigned int cmd, void *arg)
 /* ----------------------------------------------------------------------- */
 
 
-int __init bt865_init(void)
+static int __init bt865_init(void)
 {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,10)
 	int i;
@@ -1081,7 +1081,7 @@ int __init bt865_init(void)
 	return i2c_add_driver(&bt865_driver);
 }
 
-void __exit bt865_cleanup(void)
+static void __exit bt865_cleanup(void)
 {
 	i2c_del_driver(&bt865_driver);
 }
