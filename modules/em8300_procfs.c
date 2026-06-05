@@ -222,21 +222,19 @@ static void em8300_procfs_register_driver(void)
 {
 
 #if defined(USE_NEW_PROC_API)
-	em8300_proc = proc_create(EM8300_PROCFS_DIR, 
-					 S_IFDIR | S_IRUGO | S_IXUGO,
-					 NULL,
-					 NULL);
-
+	em8300_proc = proc_mkdir(EM8300_PROCFS_DIR, NULL);
 #else
 	em8300_proc = create_proc_entry(EM8300_PROCFS_DIR,
 					S_IFDIR | S_IRUGO | S_IXUGO,
 					NULL);
 #endif
 
-	if (!em8300_proc)
+	if (!em8300_proc) {
 		printk(KERN_ERR "em8300: unable to register proc entry!\n");
+		return;
+	}
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,30)
-	else
 		em8300_proc->owner = THIS_MODULE;
 #endif
 }
