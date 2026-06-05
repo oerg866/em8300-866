@@ -93,7 +93,13 @@ int em8300_fifo_init(struct em8300_s *em, struct fifo_s *f, int start, int wrptr
 		kfree(f->fifobuffer);
 	}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0)
+	f->fifobuffer = dma_alloc_coherent(&f->em->dev->dev,
+						f->nslots * f->slotsize, &f->phys_base, GFP_KERNEL);
+#else
 	f->fifobuffer = pci_alloc_consistent(f->em->dev, f->nslots * f->slotsize, &f->phys_base);
+#endif	
+
 	if (f->fifobuffer == NULL) {
 		return -ENOMEM;
 	}
@@ -126,7 +132,12 @@ void em8300_fifo_free(struct fifo_s *f)
 {
 	if (f) {
 		if (f->valid && f->fifobuffer) {
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,0,0)
+			dma_free_coherent(&f->em->dev->dev, f->nslots * f->slotsize, f->fifobuffer, f->phys_base);
+#else
 			pci_free_consistent(f->em->dev, f->nslots * f->slotsize, f->fifobuffer, f->phys_base);
+#endif
 		}
 		if (f->valid && f->preprocess_buffer) {
 			kfree(f->preprocess_buffer);
