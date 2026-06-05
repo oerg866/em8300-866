@@ -103,6 +103,18 @@ static int bt865_remove(struct i2c_client *client);
 static int bt865_command(struct i2c_client *client, unsigned int cmd, void *arg);
 static int bt865_setup(struct i2c_client *client);
 
+/* Wrappers for new kernels */
+static int bt865_probe_new(struct i2c_client *client) { return bt865_probe(client, NULL); }
+static void bt865_remove_new(struct i2c_client *client) { bt865_remove(client); };
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
+#define bt865_probe_func bt865_probe_new
+#define bt865_remove_func bt865_remove_new
+#else
+#define bt865_probe_func bt865_probe
+#define bt865_remove_func bt865_remove
+#endif
+
 static const mode_info_t mode_info[] = {
 	[ MODE_COMPOSITE_SVIDEO ] =		{ "comp+svideo" , { } },
 	[ MODE_RGB ] =				{ "rgb"         , { } },
@@ -209,8 +221,8 @@ static struct i2c_driver bt865_driver = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26)
 	.id_table =		bt865_idtable,
 #endif
-	.probe =		&bt865_probe,
-	.remove =		&bt865_remove,
+	.probe =		&bt865_probe_func,
+	.remove =		&bt865_remove_func,
 #endif
 	.command =		&bt865_command
 };

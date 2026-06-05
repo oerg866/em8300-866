@@ -194,6 +194,18 @@ static int adv717x_probe(struct i2c_client *client, const struct i2c_device_id *
 static int adv717x_remove(struct i2c_client *client);
 static int adv717x_command(struct i2c_client *client, unsigned int cmd, void *arg);
 
+/* Wrappers for new kernels */
+static int adv717x_probe_new(struct i2c_client *client) { return adv717x_probe(client, NULL); }
+static void adv717x_remove_new(struct i2c_client *client) { adv717x_remove(client); };
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
+#define adv717x_probe_func adv717x_probe_new
+#define adv717x_remove_func adv717x_remove_new
+#else
+#define adv717x_probe_func adv717x_probe
+#define adv717x_remove_func adv717x_remove
+#endif
+
 static const mode_info_t mode_info[] = {
 	[ MODE_COMPOSITE_SVIDEO ] =		{ "comp+svideo" , { 0, 0, 0, 0, 0, 1, 0, 0, 0 } },
 	[ MODE_SVIDEO ] =			{ "svideo"      , { 0, 0, 0, 0, 0, 1, 1, 0, 0 } },
@@ -329,8 +341,8 @@ static struct i2c_driver adv717x_driver = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,26)
 	.id_table =		adv717x_idtable,
 #endif
-	.probe =		&adv717x_probe,
-	.remove =		&adv717x_remove,
+	.probe =		&adv717x_probe_func,
+	.remove =		&adv717x_remove_func,
 #endif
 	.command =		&adv717x_command
 };
