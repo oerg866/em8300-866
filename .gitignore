@@ -1,0 +1,58 @@
+# Generated files
+*~
+*.o
+**/.deps/*.Po
+
+# Autotools / build output
+ChangeLog
+INSTALL
+Makefile
+Makefile.in
+aclocal.m4
+autotools/
+config.log
+config.status
+configure
+
+# dhc/
+dhc/Makefile
+dhc/Makefile.in
+dhc/dhc
+dhc/dhc.xpm
+
+# Tarballs
+em8300-*.tar.gz
+
+# em8300setup/
+em8300setup/Makefile
+em8300setup/Makefile.in
+em8300setup/em8300setup
+
+# include/
+include/Makefile
+include/Makefile.in
+include/config.h
+include/config.h.in
+include/linux/Makefile
+include/linux/Makefile.in
+include/stamp-h1
+
+# modules/ (kernel build output)
+modules/em8300_version.h
+modules/modules.order
+modules/Module.symvers
+modules/.tmp_versions/
+modules/.*.cmd
+modules/*.ko
+modules/*.mod.c
+modules/*.mod
+
+# overlay/
+overlay/Makefile
+overlay/Makefile.in
+overlay/autocal
+overlay/dxr3view
+
+# scripts/
+scripts/Makefile
+scripts/Makefile.in
