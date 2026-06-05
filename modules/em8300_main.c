@@ -373,7 +373,11 @@ int em8300_io_mmap(struct file *file, struct vm_area_struct *vma)
 			SetPageReserved(virt_to_page(adr));
 
 		/* lock the area*/
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,3,0)
+		vm_flags_set(vma, VM_LOCKED);
+#else
 		vma->vm_flags |= VM_LOCKED;
+#endif
 
 		/* remap the memory to user space */
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2,5,3)
