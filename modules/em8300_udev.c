@@ -55,7 +55,11 @@ struct class *em8300_class;
 
 static void em8300_udev_register_driver(void)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6,4,0)
+	em8300_class = class_create("em8300");
+#else
 	em8300_class = class_create(THIS_MODULE, "em8300");
+#endif
 }
 
 static void em8300_udev_register_card(struct em8300_s *em)
