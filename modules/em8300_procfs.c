@@ -183,7 +183,7 @@ static void em8300_procfs_register_card(struct em8300_s *em)
 #if defined(USE_NEW_PROC_API)
 		proc = proc_create_data(devname, 
 					 S_IRUGO | S_IWUGO,
-					 NULL,
+					 em8300_proc,
 					 &em8300_proc_fops,
 					 em);
 
