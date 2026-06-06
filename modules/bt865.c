@@ -121,8 +121,6 @@ static const mode_info_t mode_info[] = {
 };
 
 struct bt865_data_s {
-	/* MODERN KERNEL HACK HACK HACK AARRHGHHHH */
-	int (*command)(struct i2c_client *client, unsigned int cmd, void *arg);
 	int chiptype;
 	int mode;
 	int bars;
@@ -1007,8 +1005,6 @@ static int bt865_probe(struct i2c_client *client,
 	if (!(data = kmalloc(sizeof(struct bt865_data_s), GFP_KERNEL)))
 		return -ENOMEM;
 	memset(data, 0, sizeof(struct bt865_data_s));
-
-	data->command = bt865_command;
 
 	i2c_set_clientdata(client, data);
 
