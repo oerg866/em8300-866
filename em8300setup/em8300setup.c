@@ -1,6 +1,7 @@
 /*     em8300setup 
  *     For microcode uploading to, and configuration of, your em8300 based hardware mpeg2 decoder card.
  *     Copyright (C) 2002 Malcolm Lashley
+ *               (C) 2026 Eric Voirin
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +18,12 @@
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef HAVE_CONFIG
 #include <config.h>
+#else
+/* Sensible default... */
+#define FIRMWARE_DIR "/lib/firmware"
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
