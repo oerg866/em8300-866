@@ -9,6 +9,7 @@
  *           (C) 2002 Daniel Holm <mswitch@users.sourceforge.net>
  *           (C) 2003-2005 Jon Burgess <jburgess@uklinux.net>
  *           (C) 2005-2007 Nicolas Boullis <nboullis@debian.org>
+ *           (C) 2026 Eric Voirin <oerg866@googlemail.com>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License

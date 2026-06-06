@@ -1,6 +1,7 @@
 /*
 	Copyright (C) 2000 Henrik Johansson <henrikjo@post.utfors.se>
 	Copyright (C) 2005 Jon Burgess <jburgess@uklinux.net>
+	Copyright (C) 2026 Eric Voirin <oerg866@googlemail.com>
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

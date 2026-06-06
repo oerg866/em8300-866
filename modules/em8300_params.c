@@ -1,6 +1,7 @@
 /*
  * em8300_params.c -- parameters for the em8300 driver
  * Copyright (C) 2007 Nicolas Boullis <nboullis@debian.org>
+ *           (C) 2026 Eric Voirin <oerg866@googlemail.com>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License

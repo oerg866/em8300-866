@@ -4,6 +4,7 @@
  * Copyright (C) 2001 Henrik Johansson <lhj@users.sourceforge.net>
  *           (C) 2001 Rick Haines <rick@kuroyi.net>
  *           (C) 2001 Daniel Chassot <Daniel.Chassot@vibro-meter.com>
+ *           (C) 2026 Eric Voirin <oerg866@googlemail.com>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License

@@ -2,6 +2,7 @@
  * em8300_ioctl32.c -- compatibility layer for 32-bit ioctls on 64-bit kernels
  * Copyright (C) 2004 Nicolas Boullis <nboullis@debian.org>
  * Copyright (C) 2006 István Váradi <ivaradi@users.sourceforge.net>
+ * Copyright (C) 2026 Eric Voirin <oerg866@googlemail.com>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License

@@ -2,6 +2,7 @@
 	em8300.c - EM8300 MPEG-2 decoder device driver
 
 	Copyright (C) 2000 Henrik Johansson <henrikjo@post.utfors.se>
+              (C) 2026 Eric Voirin <oerg866@googlemail.com>
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by

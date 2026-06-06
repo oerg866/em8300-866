@@ -1,6 +1,7 @@
 /*
  * em8300_udev.c -- interface for udev
  * Copyright (C) 2006 Nicolas Boullis <nboullis@debian.org>
+ *           (C) 2026 Eric Voirin <oerg866@googlemail.com>
  *
  *  This program is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU General Public License
