@@ -1,4 +1,4 @@
-# REALmagic Hollywood Plus / Creative DXR3 Device Driver for Linux
+# Linux Device Driver for REALmagic Hollywood Plus / Creative DXR3 & compatibles
 
 This is a **fork of the original DXR3 drivers**, initiated by Eric Voirin (oerg866), with the purpose of making this card usable on modern (as of 2026) Linux flavors.
 
@@ -7,12 +7,21 @@ For further information, visit the original project's webpage at http://dxr3.sou
 Things are currently being autoconfed.  The kernel modules still need to
 be built separately.
 
-## Card Info
+## Supported Cards
 
-More info about the cards can be found on TheRetroWeb:
+**Tested and working**
 
-* [Sigma Designs REALmagic Hollywood Plus](https://theretroweb.com/expansioncards/s/sigma-designs-hollywood-plus)
+* [Sigma Designs REALmagic Hollywood Plus](https://theretroweb.com/expansioncards/s/sigma-designs-hollywood-plus)  
+  Also known as:
+  * Jaton Hollywood Plus
+  * Labway LAB DVD Decoder F50
+  * Formosa DVD8300
 * [Creative Dxr3](https://theretroweb.com/expansioncards/s/creative-ct7230)
+
+**Untested but using the same chip**
+
+* [EON VM-47B](https://theretroweb.com/expansioncards/s/eon-lung-hwa-vm47b)
+
 
 ## Usage
 
@@ -56,6 +65,8 @@ The microcode supplied with this driver works for most situations and does not n
 
 This fixes a known issue with the lower half of the screen flickering on some files, especially high bit rate ones produced by MainConcept encoders.
 
+**It also fixes the card's failure to play back MPEG2 files encoded with the `high` level. (oerg866 is of the opinion that it also looks a lot sharper and it severely reduces the dot crawl on composite video)**
+
 ### Microcode extraction & updating
 
 * Extract the `rmquasar.vxd` file from the Windows 9x driver
@@ -63,6 +74,12 @@ This fixes a known issue with the lower half of the screen flickering on some fi
   This will produce three `bin` files. You need to test which one is the best fit for your card (no clue how the driver decides this atm).  
 * To make the change permanent, copy the microcode file to `/lib/firmware/em8300.bin`
 
+### Loading microcode from the commandline
+
+This can be accomplished using the `em8300setup` utility.
+
+`em8300setup` Loads the microcode from the default location (see above)  
+`em8300setup -f` Loads the microcode from an arbitrary file
 
 # Credits
 
