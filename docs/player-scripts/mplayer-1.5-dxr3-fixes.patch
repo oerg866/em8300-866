@@ -1,0 +1,130 @@
+MPlayer 1.5 (svn38674) fixes for the DXR3 / Hollywood+ video output (-vo dxr3)
+
+ * libvo/vo_dxr3.c: keep the overlay rectangle on the video window (it was
+   only updated on resize/expose, so it stayed in the top-left corner and
+   did not follow moves), keep the picture aspect ratio (letterbox /
+   pillarbox inside the window, black bars), and in fullscreen keep the
+   VGA signal mixed in instead of switching to card-only output, which
+   stretched the picture over the whole monitor.
+ * mplayer.c: with prebuf the dxr3 vo reports VFCAP_TIMER, so MPlayer never
+   slept and spun at 100% CPU while waiting for audio, starving X (jerky
+   mouse) on single-CPU machines. Nap up to 10 ms instead.
+
+Apply in the MPlayer source tree with:  patch -p1 < mplayer-1.5-dxr3-fixes.patch
+
+--- a/libvo/vo_dxr3.c
++++ b/libvo/vo_dxr3.c
+@@ -172,6 +172,8 @@
+ #define KEY_COLOR 0x80a040
+ static XWindowAttributes xwin_attribs;
+ static overlay_t *overlay_data;
++static float dxr3_aspect = 4.0f / 3.0f;
++static int ov_last_x = -1, ov_last_y = -1, ov_last_w = -1, ov_last_h = -1;
+ #endif
+ 
+ 
+@@ -196,9 +198,11 @@
+ 	case VOCTRL_FULLSCREEN:
+ 		if (dxr3_overlay) {
+ 			vo_x11_fullscreen();
+-			overlay_signalmode(overlay_data,
+-			  vo_fs ? EM8300_OVERLAY_SIGNAL_ONLY :
+-			    EM8300_OVERLAY_SIGNAL_WITH_VGA);
++			/* Card-only output would stretch the picture over the whole
++			 * monitor; keep the VGA mixed in so the letterboxed overlay
++			 * rectangle shows with black bars around it. */
++			overlay_signalmode(overlay_data, EM8300_OVERLAY_SIGNAL_WITH_VGA);
++			ov_last_x = -1; /* force the overlay rectangle update */
+ 			return VO_TRUE;
+ 		}
+ 		return VO_FALSE;
+@@ -400,6 +404,9 @@
+ 	}
+ 
+ 
++	/* display aspect, used to letterbox the overlay picture */
++	dxr3_aspect = d_height ? (float) d_width / (float) d_height : 4.0f / 3.0f;
++
+ 	/* libavcodec requires a width and height that is x|16 */
+ 	aspect_save_orig(width, height);
+ 	aspect_save_prescale(d_width, d_height);
+@@ -537,7 +544,7 @@
+ 		}
+ 
+ 		/* Set keycolor and activate overlay */
+-		XSetWindowBackground(mDisplay, vo_window, key_color.pixel);
++		XSetWindowBackground(mDisplay, vo_window, BlackPixel(mDisplay, mScreen));
+ 		XClearWindow(mDisplay, vo_window);
+ 		overlay_set_keycolor(overlay_data, key_color.pixel);
+ 		overlay_set_mode(overlay_data, EM8300_OVERLAY_MODE_OVERLAY);
+@@ -627,6 +634,39 @@
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_X11
++/* Keep the DXR3 overlay rectangle glued to the video window: the window
++ * manager places/moves the window without sending resize events, so poll
++ * its root-relative geometry every frame and update the card on change. */
++static void dxr3_track_overlay_window(int force)
++{
++	XWindowAttributes a;
++	Window junk;
++	int x, y;
++
++	if (!vo_window || !overlay_data)
++		return;
++	XGetWindowAttributes(mDisplay, vo_window, &a);
++	XTranslateCoordinates(mDisplay, vo_window, mRootWin, 0, 0, &x, &y, &junk);
++	if (force || x != ov_last_x || y != ov_last_y || a.width != ov_last_w || a.height != ov_last_h) {
++		/* keep the picture proportions: letterbox/pillarbox inside the
++		 * window (e.g. a 4:3 film in fullscreen on a 16:9 monitor) */
++		int w = a.width, h = a.height, ox = x, oy = y;
++		if (h > 0 && dxr3_aspect > 0) {
++			if ((float) w / h > dxr3_aspect) {
++				w = (int) (h * dxr3_aspect + 0.5f);
++				ox += (a.width - w) / 2;
++			} else {
++				h = (int) (w / dxr3_aspect + 0.5f);
++				oy += (a.height - h) / 2;
++			}
++		}
++		overlay_set_window(overlay_data, ox, oy, w, h);
++		ov_last_x = x; ov_last_y = y; ov_last_w = a.width; ov_last_h = a.height;
++	}
++}
++#endif
++
+ static void flip_page(void)
+ {
+ #ifdef CONFIG_X11
+@@ -640,12 +680,13 @@
+ 		}
+ 		if (event & VO_EVENT_EXPOSE) {
+ 			Window junkwindow;
+-			XSetWindowBackground(mDisplay, vo_window, KEY_COLOR);
++			XSetWindowBackground(mDisplay, vo_window, BlackPixel(mDisplay, mScreen));
+ 			XClearWindow(mDisplay, vo_window);
+ 			XGetWindowAttributes(mDisplay, vo_window, &xwin_attribs);
+ 			XTranslateCoordinates(mDisplay, vo_window, mRootWin, -xwin_attribs.border_width, -xwin_attribs.border_width, &xwin_attribs.x, &xwin_attribs.y, &junkwindow);
+ 			overlay_set_window(overlay_data, xwin_attribs.x, xwin_attribs.y, xwin_attribs.width, xwin_attribs.height);
+ 		}
++		dxr3_track_overlay_window(event & (VO_EVENT_RESIZE | VO_EVENT_EXPOSE));
+ 	}
+ #endif
+ 
+--- a/mplayer.c
++++ b/mplayer.c
+@@ -2306,6 +2306,13 @@
+             frame_time_remaining = 1;
+ 	} else if (*time_frame > 0.001)
+             *time_frame = timing_sleep(*time_frame);
++    } else if (frame_time_remaining && *time_frame > 0.002) {
++        /* The vo does its own timing (e.g. dxr3 with prebuf), but we are
++         * early and waiting for audio: nap instead of spinning at 100% CPU,
++         * which starves X and everything else on a single-CPU machine. */
++        float nap = *time_frame < 0.01 ? *time_frame : 0.01;
++        usec_sleep(nap * 1000000);
++        *time_frame -= GetRelativeTime();
+     }
+ 
+     handle_udp_master(mpctx->sh_video->pts);

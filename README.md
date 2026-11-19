@@ -27,6 +27,9 @@ be built separately.
 
 To use this card properly, take a look at the [application documentation](./docs) folder in this repository.
 
+Ready-made launch scripts for xine and MPlayer (overlay, AC3 pass-through, audio/subtitle
+selection, fullscreen) and a patch for MPlayer's `-vo dxr3` are in [docs/player-scripts](./docs/player-scripts).
+
 ## Building and Installing the driver
 
 Currently, a lot of the "fluff" is a bit broken on modern distributions, so the buildability is really only maintained for the driver modules (`modules` subdirectory).
