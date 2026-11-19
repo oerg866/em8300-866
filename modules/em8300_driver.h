@@ -422,4 +422,34 @@ void sub_4288c(struct em8300_s *em, int pa, int pb, int pc, int pd, int pe, int 
 int em9010_get_attribute(struct em8300_s *em, int attribute);
 int em9010_set_attribute(struct em8300_s *em, int attribute, int value);
 
+#include <linux/delay.h>
+#include <linux/preempt.h>
+#include <linux/irqflags.h>
+#include <linux/sched.h>
+
+/* True when we may sleep: not in IRQ/softirq, no spinlock held, IRQs on. */
+static inline int em8300_can_sleep(void)
+{
+	return !in_atomic() && !irqs_disabled();
+}
+
+/*
+ * Wait about ms milliseconds. Sleeps when possible so a single-CPU system
+ * (X server, mouse) keeps running; busy-waits only in atomic context.
+ */
+static inline void em8300_wait_ms(unsigned int ms)
+{
+	if (em8300_can_sleep())
+		usleep_range(ms * 1000, ms * 1000 + 500);
+	else
+		mdelay(ms);
+}
+
+/* Give other tasks a chance inside long polling loops. */
+static inline void em8300_relax(void)
+{
+	if (em8300_can_sleep())
+		cond_resched();
+}
+
 #endif /*EM8300_DRIVER_H*/

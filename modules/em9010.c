@@ -40,7 +40,7 @@ static int testcable(struct em8300_s *em)
 		if(attempts++ > 100) {
 			return 0;
 		}
-		mdelay(1);
+		em8300_wait_ms(1);
 	}
 
 	attempts = 0;
@@ -48,7 +48,7 @@ static int testcable(struct em8300_s *em)
 		if(attempts++ > 100) {
 			return 0;
 		}
-		mdelay(1);
+		em8300_wait_ms(1);
 	}
 
 	return 1;
@@ -91,6 +91,15 @@ typedef struct timeval __timeval;
 #define TV_USEC(tv) ((tv).tv_usec)
 #endif
 
+/* whole elapsed time in microseconds (seconds included) */
+#define TV_ELAPSED_US(tv) ((long)(tv).tv_sec * 1000000L + TV_USEC(tv))
+
+/*
+ * How long to wait for a VGA vsync edge (one frame is ~17 ms). Generous,
+ * because the wait loop lets other tasks run and may be away for a while.
+ */
+#define EM9010_VSYNC_TIMEOUT_US (250 * 1000)
+
 /* computes `a - b'  and write the result in `result', assumes `a >= b' */
 static inline void my_timeval_less(__timeval a, __timeval b, __timeval * result)
 {
@@ -126,9 +135,10 @@ int sub_2AC2D(struct em8300_s *em)
 			EM8300_GETTIMEOFDAY(&t2);
 			my_timeval_less(t2, t, &tr);
 
-			if (TV_USEC(tr) >= 50 * 1000)
+			if (TV_ELAPSED_US(tr) >= EM9010_VSYNC_TIMEOUT_US)
 				return(0);
 
+			em8300_relax();
 			a = 1000;
 		}
 	}
@@ -140,8 +150,9 @@ int sub_2AC2D(struct em8300_s *em)
 			EM8300_GETTIMEOFDAY(&t2);
 			my_timeval_less(t2, t, &tr);
 
-			if(TV_USEC(tr) >= 50*1000)
+			if (TV_ELAPSED_US(tr) >= EM9010_VSYNC_TIMEOUT_US)
 				return(0);
+			em8300_relax();
 			a = 1000;
 		}
 	}
@@ -273,7 +284,7 @@ int em9010_calibrate_yoffset(struct em8300_s *em)
 
 	pr_debug("em9010: Done drawing y testpattern\n");
 
-	mdelay(20);
+	em8300_wait_ms(20);
 
 	if (!sub_2AC2D(em)) {
 		return 0;
@@ -313,6 +324,9 @@ int em9010_calibrate_yoffset(struct em8300_s *em)
 	return 1;
 }
 
+/* how far below the classic start value the X offset scan begins */
+#define EM9010_XOFFSET_EXTRA 100
+
 int em9010_calibrate_xoffset(struct em8300_s *em)
 {
 	int i;
@@ -329,14 +343,14 @@ int em9010_calibrate_xoffset(struct em8300_s *em)
 	em8300_dicom_fill_dispbuffers(em, 2, 0, 2, em->dbuf_info.ysize, 0xffffffff, 0x80808080 );
 
 	em->overlay_a[EM9010_ATTRIBUTE_XCORR] = 1000;
-	em->overlay_a[EM9010_ATTRIBUTE_XOFFSET] = 100000 / em->overlay_a[EM9010_ATTRIBUTE_XCORR];
+	em->overlay_a[EM9010_ATTRIBUTE_XOFFSET] = 100000 / em->overlay_a[EM9010_ATTRIBUTE_XCORR] - EM9010_XOFFSET_EXTRA;
 
 	sub_4288c(em, 0, 0, em->dbuf_info.xsize, em->dbuf_info.ysize, em->overlay_a[EM9010_ATTRIBUTE_XOFFSET],
 			em->overlay_a[EM9010_ATTRIBUTE_YOFFSET], em->overlay_a[EM9010_ATTRIBUTE_XCORR], em->overlay_double_y);
 
 	pr_debug("em9010: Done drawing x testpattern\n");
 
-	mdelay(20);
+	em8300_wait_ms(20);
 
 	if (!sub_2AC2D(em)) {
 		return 0;
@@ -345,7 +359,7 @@ int em9010_calibrate_xoffset(struct em8300_s *em)
 	em9010_write(em, 0, 0x14);
 	em9010_write(em, 0, 0x10);
 
-	for (i = 0; i <  220; i++) {
+	for (i = 0; i < 220 + EM9010_XOFFSET_EXTRA; i++) {
 		if (!sub_2AC2D(em)) {
 			pr_debug("em9010: sub_2AC2D failed\n");
 			return 0;
@@ -361,7 +375,7 @@ int em9010_calibrate_xoffset(struct em8300_s *em)
 		}
 	}
 
-	if (i == 220) {
+	if (i == 220 + EM9010_XOFFSET_EXTRA) {
 		return 0;
 	}
 
@@ -446,7 +460,7 @@ static int em9010_calibrate_xcorrection(struct em8300_s *em)
 
 	pr_debug("em9010: Done drawing xcorr testpattern\n");
 
-	mdelay(20);
+	em8300_wait_ms(20);
 
 	if (!sub_2AC2D(em)) {
 		return 0;
@@ -475,6 +489,13 @@ static int em9010_calibrate_xcorrection(struct em8300_s *em)
 			break;
 		}
 
+	}
+
+	if (i == 150) {
+		/* never matched: don't report the end of the scan range as a result */
+		pr_info("em9010: x correction calibration failed (default %d)\n",
+			em->overlay_xcorr_default);
+		return 0;
 	}
 
 	if (em->overlay_xcorr_default > 1500) {
@@ -590,6 +611,9 @@ static int loc_2A66E(struct em8300_s *em)
 		}
 	} else if (l5 == 1600) {
 		l6 = 0x7d0;
+	} else if (l5 == 1920) {
+		/* 1920x1080@60 (CEA/VESA): 2200 total pixels per line */
+		l6 = 0x898;
 	} else if (l5 == 2048) {
 		l6 = 0xa00;
 	} else {
@@ -714,7 +738,7 @@ int em9010_overlay_update(struct em8300_s *em)
 	}
 
 	//wait on the display of one frame at least
-	mdelay(20);
+	em8300_wait_ms(20);
 
 	//the setting of the overlay mode shall be done before calling loc_2BE50!
 	em->overlay_double_y = loc_2BE50(em);
@@ -780,6 +804,14 @@ int em9010_get_attribute(struct em8300_s *em, int attribute)
 int em8300_ioctl_overlay_calibrate(struct em8300_s *em, em8300_overlay_calibrate_t *c)
 {
 	int r1;
+
+	/*
+	 * Userspace (autocal) draws the test pattern and calls this ioctl right
+	 * away. On modern X servers the pattern can take several frames to reach
+	 * the VGA output, so give it time, otherwise we measure a stale screen.
+	 */
+	msleep(250);
+
 	em9010_write(em, 0xc, 0xe);
 
 	switch (c->cal_mode) {

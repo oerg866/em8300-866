@@ -76,7 +76,7 @@ typedef struct snd_em8300_pcm_indirect {
 	snd_pcm_uframes_t appl_ptr;     /* Last seen appl_ptr */
 } snd_em8300_pcm_indirect_t;
 
-typedef void (*snd_em8300_pcm_indirect_copy_t)(snd_pcm_substream_t *substream,
+typedef int (*snd_em8300_pcm_indirect_copy_t)(snd_pcm_substream_t *substream,
 					       snd_em8300_pcm_indirect_t *rec, size_t bytes);
 
 typedef struct {
@@ -306,7 +306,7 @@ static snd_pcm_uframes_t snd_em8300_pcm_pointer(snd_pcm_substream_t *substream)
 							hw_ptr);
 }
 
-static void snd_em8300_pcm_trans_dma(snd_pcm_substream_t *substream,
+static int snd_em8300_pcm_trans_dma(snd_pcm_substream_t *substream,
 				     snd_em8300_pcm_indirect_t *rec,
 				     size_t bytes)
 {
@@ -315,6 +315,16 @@ static void snd_em8300_pcm_trans_dma(snd_pcm_substream_t *substream,
 	struct em8300_s *em = em8300_alsa->em;
 	int writeindex = ((int)read_ucregister(MA_PCIWrPtr) - (ucregister(MA_PCIStart) - 0x1000)) / 3;
 	int readindex = ((int)read_ucregister(MA_PCIRdPtr) - (ucregister(MA_PCIStart) - 0x1000)) / 3;
+	int nslots = read_ucregister(MA_PCISize) / 3;
+
+	/*
+	 * Slot ring full: refuse the chunk so the caller keeps it in the ALSA
+	 * buffer and retries later. Previously the chunk was silently dropped
+	 * while being accounted as sent, which made audio skip ahead of video.
+	 */
+	if ((writeindex + 1) % nslots == readindex)
+		return -EAGAIN;
+
 	writel((unsigned long int)(substream->runtime->dma_addr + rec->sw_data) >> 16,
 	       ((uint32_t *)ucregister_ptr(MA_PCIStart))+3*writeindex);
 	writel((unsigned long int)(substream->runtime->dma_addr + rec->sw_data) & 0xffff,
@@ -322,12 +332,9 @@ static void snd_em8300_pcm_trans_dma(snd_pcm_substream_t *substream,
 	writel(bytes,
 	       ((uint32_t *)ucregister_ptr(MA_PCIStart))+3*writeindex+2);
 	writeindex += 1;
-	writeindex %= read_ucregister(MA_PCISize) / 3;
-//	printk("em8300-%d: snd_em8300_pcm_trans_dma(%d) called.\n", em->card_nr, bytes);
-	if (readindex != writeindex)
-		write_ucregister(MA_PCIWrPtr, ucregister(MA_PCIStart) - 0x1000 + writeindex * 3);
-	else
-		printk("em8300-%d: snd_em8300_pcm_trans_dma failed.\n", em->card_nr);
+	writeindex %= nslots;
+	write_ucregister(MA_PCIWrPtr, ucregister(MA_PCIStart) - 0x1000 + writeindex * 3);
+	return 0;
 }
 
 static inline void
@@ -358,7 +365,8 @@ snd_em8300_pcm_indirect_playback_transfer(snd_pcm_substream_t *substream,
 			bytes = 8192;
 		if (!bytes)
 			break;
-		copy(substream, rec, bytes);
+		if (copy(substream, rec, bytes) < 0)
+			break;	/* no free DMA slot: retry on the next ack/interrupt */
 		rec->hw_data += bytes;
 		if (rec->hw_data == rec->hw_buffer_size)
 			rec->hw_data = 0;
